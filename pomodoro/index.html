@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UFO Pomodoro Timer</title>
+  <style>
+    :root {
+      --space: #08051a;
+      --space-2: #14102f;
+      --neon: #8cfffb;
+      --neon-2: #b7ff5a;
+      --pink: #ff5af7;
+      --panel: rgba(10, 18, 45, 0.78);
+      --glass: rgba(255, 255, 255, 0.12);
+      --text: #f5f7ff;
+      --muted: #aeb6e6;
+      --danger: #ff7373;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 90, 247, 0.16), transparent 28%),
+        radial-gradient(circle at 80% 10%, rgba(140, 255, 251, 0.14), transparent 28%),
+        linear-gradient(135deg, var(--space), var(--space-2));
+      overflow-x: hidden;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .stars, .stars::before, .stars::after {
+      position: fixed;
+      inset: 0;
+      content: "";
+      pointer-events: none;
+      background-image:
+        radial-gradient(#ffffff 1px, transparent 1px),
+        radial-gradient(#8cfffb 1px, transparent 1px);
+      background-size: 90px 90px, 140px 140px;
+      background-position: 0 0, 40px 30px;
+      opacity: 0.34;
+      animation: drift 32s linear infinite;
+    }
+
+    .stars::before {
+      animation-duration: 52s;
+      opacity: 0.22;
+      transform: scale(1.3);
+    }
+
+    .stars::after {
+      animation-duration: 70s;
+      opacity: 0.16;
+      transform: scale(1.8);
+    }
+
+    @keyframes drift {
+      from { translate: 0 0; }
+      to { translate: -120px 160px; }
+    }
+
+    .app {
+      width: min(960px, 100%);
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 22px;
+      align-items: stretch;
+      z-index: 1;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(140, 255, 251, 0.24);
+      border-radius: 28px;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42), inset 0 0 34px rgba(140, 255, 251, 0.05);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 28px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      position: relative;
+      min-height: 620px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(2rem, 4vw, 4rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+      text-shadow: 0 0 24px rgba(140, 255, 251, 0.35);
+    }
+
+    .subtitle {
+      margin: 0 auto 22px;
+      color: var(--muted);
+      max-width: 32rem;
+      font-size: 1rem;
+    }
+
+    .ufo-wrap {
+      width: min(360px, 82vw);
+      height: 265px;
+      position: relative;
+      margin: 10px auto 22px;
+    }
+
+    .ufo {
+      width: 230px;
+      height: 100px;
+      position: absolute;
+      left: 50%;
+      top: 34px;
+      translate: -50% 0;
+      animation: hover 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 28px rgba(140, 255, 251, 0.42));
+    }
+
+    @keyframes hover {
+      0%, 100% { transform: translateY(0) rotate(-1deg); }
+      50% { transform: translateY(-13px) rotate(1deg); }
+    }
+
+    .dome {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      translate: -50% 0;
+      width: 116px;
+      height: 68px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.8), rgba(140,255,251,0.22));
+      border-radius: 90px 90px 24px 24px;
+      border: 2px solid rgba(255,255,255,0.48);
+    }
+
+    .body {
+      position: absolute;
+      left: 0;
+      top: 52px;
+      width: 230px;
+      height: 58px;
+      background: linear-gradient(180deg, #dbe5ff, #6670a6 52%, #292a58);
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.5);
+    }
+
+    .rim {
+      position: absolute;
+      inset: 22px 20px 12px;
+      border-radius: 50%;
+      border-top: 4px solid rgba(255,255,255,0.42);
+    }
+
+    .light {
+      position: absolute;
+      top: 70px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--neon-2);
+      box-shadow: 0 0 16px var(--neon-2);
+      animation: blink 1.3s ease-in-out infinite alternate;
+    }
+
+    .light:nth-child(4) { left: 45px; }
+    .light:nth-child(5) { left: 108px; animation-delay: 0.25s; background: var(--pink); box-shadow: 0 0 16px var(--pink); }
+    .light:nth-child(6) { right: 45px; animation-delay: 0.5s; }
+
+    @keyframes blink {
+      from { opacity: 0.35; transform: scale(0.78); }
+      to { opacity: 1; transform: scale(1.1); }
+    }
+
+    .beam {
+      position: absolute;
+      left: 50%;
+      top: 116px;
+      translate: -50% 0;
+      width: 215px;
+      height: 145px;
+      background: linear-gradient(180deg, rgba(183,255,90,0.38), rgba(183,255,90,0.03));
+      clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%);
+      filter: blur(0.2px);
+      opacity: 0.8;
+      animation: beamPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes beamPulse {
+      0%, 100% { opacity: 0.46; }
+      50% { opacity: 0.9; }
+    }
+
+    .cow {
+      position: absolute;
+      left: 50%;
+      bottom: 10px;
+      translate: -50% 0;
+      font-size: 54px;
+      animation: abduct 4s ease-in-out infinite;
+    }
+
+    @keyframes abduct {
+      0%, 100% { transform: translateY(0) rotate(-4deg); }
+      50% { transform: translateY(-28px) rotate(4deg); }
+    }
+
+    .timer {
+      font-size: clamp(4rem, 12vw, 7.5rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.08em;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 30px rgba(183, 255, 90, 0.28);
+    }
+
+    .mode {
+      margin-top: 10px;
+      color: var(--neon);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 0.82rem;
+    }
+
+    .controls {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 18px;
+      padding: 14px 16px;
+      color: #07131f;
+      background: var(--neon);
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.28);
+      filter: brightness(1.08);
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .secondary { background: var(--glass); color: var(--text); border: 1px solid rgba(255,255,255,0.14); }
+    .pink { background: var(--pink); color: #23071f; }
+    .green { background: var(--neon-2); color: #111c05; }
+    .danger { background: rgba(255, 115, 115, 0.88); color: #250707; }
+
+    .mode-buttons {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .settings {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 16px;
+      padding: 13px 14px;
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--neon);
+      box-shadow: 0 0 0 4px rgba(140,255,251,0.12);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.8rem;
+      color: var(--neon-2);
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .stat span { color: var(--muted); font-size: 0.9rem; }
+
+    .progress-wrap {
+      width: 100%;
+      height: 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .progress {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--neon), var(--neon-2), var(--pink));
+      border-radius: inherit;
+      transition: width 0.35s linear;
+    }
+
+    .status {
+      min-height: 48px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(140, 255, 251, 0.08);
+      border: 1px solid rgba(140, 255, 251, 0.16);
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .tiny {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 820px) {
+      .app { grid-template-columns: 1fr; }
+      .hero { min-height: auto; }
+      .buttons { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+
+  <main class="app" aria-label="UFO Pomodoro timer application">
+    <section class="card hero">
+      <div>
+        <h1>UFO Pomodoro</h1>
+        <p class="subtitle">Focus gets beamed aboard. Distractions remain on the pasture.</p>
+
+        <div class="ufo-wrap" aria-hidden="true">
+          <div class="ufo">
+            <div class="dome"></div>
+            <div class="body"></div>
+            <div class="rim"></div>
+            <div class="light"></div>
+            <div class="light"></div>
+            <div class="light"></div>
+          </div>
+          <div class="beam"></div>
+          <div class="cow">🐄</div>
+        </div>
+
+        <div class="timer" id="timer" aria-live="polite">25:00</div>
+        <div class="mode" id="modeLabel">Focus Beam</div>
+      </div>
+    </section>
+
+    <section class="card controls">
+      <h2 class="panel-title">Mission Control</h2>
+
+      <div class="progress-wrap" aria-label="Session progress">
+        <div class="progress" id="progress"></div>
+      </div>
+
+      <div class="buttons">
+        <button id="startPauseBtn">Start Tractor Beam</button>
+        <button class="secondary" id="resetBtn">Reset Orbit</button>
+        <button class="green" id="skipBtn">Skip Phase</button>
+        <button class="danger" id="clearBtn">Clear Stats</button>
+      </div>
+
+      <div class="mode-buttons" aria-label="Timer mode selection">
+        <button class="secondary" data-mode="focus">Focus Beam</button>
+        <button class="secondary" data-mode="short">Short Refuel</button>
+        <button class="secondary" data-mode="long">Long Moonwalk</button>
+      </div>
+
+      <div class="settings">
+        <label>
+          Focus minutes
+          <input id="focusInput" type="number" min="1" max="180" value="25" />
+        </label>
+        <label>
+          Short break minutes
+          <input id="shortInput" type="number" min="1" max="60" value="5" />
+        </label>
+        <label>
+          Long break minutes
+          <input id="longInput" type="number" min="1" max="90" value="15" />
+        </label>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><strong id="sessionsCount">0</strong><span>focus sessions</span></div>
+        <div class="stat"><strong id="cyclesCount">0</strong><span>completed cycles</span></div>
+      </div>
+
+      <div class="status" id="status">Ready for launch. Pick a mission and start the beam.</div>
+      <p class="tiny">Tip: after four focus sessions, the UFO suggests a longer break. Your settings stay only while this page is open.</p>
+    </section>
+  </main>
+
+  <script>
+    const timerEl = document.getElementById("timer");
+    const modeLabel = document.getElementById("modeLabel");
+    const progressEl = document.getElementById("progress");
+    const statusEl = document.getElementById("status");
+    const startPauseBtn = document.getElementById("startPauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const skipBtn = document.getElementById("skipBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const sessionsCountEl = document.getElementById("sessionsCount");
+    const cyclesCountEl = document.getElementById("cyclesCount");
+
+    const inputs = {
+      focus: document.getElementById("focusInput"),
+      short: document.getElementById("shortInput"),
+      long: document.getElementById("longInput")
+    };
+
+    const labels = {
+      focus: "Focus Beam",
+      short: "Short Refuel",
+      long: "Long Moonwalk"
+    };
+
+    let mode = "focus";
+    let remaining = getDuration(mode);
+    let total = remaining;
+    let intervalId = null;
+    let isRunning = false;
+    let focusSessions = 0;
+    let completedCycles = 0;
+
+    function getDuration(selectedMode) {
+      const value = Number(inputs[selectedMode].value);
+      const safeValue = Number.isFinite(value) && value > 0 ? value : 1;
+      return Math.round(safeValue * 60);
+    }
+
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
+      const secs = (seconds % 60).toString().padStart(2, "0");
+      return `${minutes}:${secs}`;
+    }
+
+    function render() {
+      timerEl.textContent = formatTime(remaining);
+      modeLabel.textContent = labels[mode];
+      sessionsCountEl.textContent = focusSessions;
+      cyclesCountEl.textContent = completedCycles;
+      const elapsed = total - remaining;
+      const percent = total > 0 ? (elapsed / total) * 100 : 0;
+      progressEl.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+      document.title = `${formatTime(remaining)} · ${labels[mode]}`;
+    }
+
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+      isRunning = true;
+      startPauseBtn.textContent = "Pause Beam";
+      setStatus(`${labels[mode]} engaged. Hold steady in the cosmic office chair.`);
+
+      intervalId = setInterval(() => {
+        remaining -= 1;
+        render();
+
+        if (remaining <= 0) {
+          completePhase();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      isRunning = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      startPauseBtn.textContent = "Resume Tractor Beam";
+      setStatus("Beam paused. The cow is hovering politely.");
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      startPauseBtn.textContent = "Start Tractor Beam";
+      remaining = getDuration(mode);
+      total = remaining;
+      setStatus(`Reset to ${labels[mode]}. Awaiting launch coordinates.`);
+      render();
+    }
+
+    function switchMode(nextMode, shouldAutoStart = false) {
+      pauseTimer();
+      mode = nextMode;
+      remaining = getDuration(mode);
+      total = remaining;
+      startPauseBtn.textContent = "Start Tractor Beam";
+      setStatus(`Mission changed to ${labels[mode]}.`);
+      render();
+      if (shouldAutoStart) startTimer();
+    }
+
+    function completePhase() {
+      pauseTimer();
+      playChime();
+
+      if (mode === "focus") {
+        focusSessions += 1;
+        if (focusSessions % 4 === 0) {
+          completedCycles += 1;
+          setStatus("Focus cargo secured. Four beams complete. Begin the long moonwalk.");
+          switchMode("long");
+        } else {
+          setStatus("Focus cargo secured. Take a short refuel before the next abduction.");
+          switchMode("short");
+        }
+      } else {
+        setStatus("Break complete. The saucer requests another focus specimen.");
+        switchMode("focus");
+      }
+
+      render();
+    }
+
+    function skipPhase() {
+      completePhase();
+    }
+
+    function playChime() {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      const audio = new AudioContext();
+      const now = audio.currentTime;
+
+      const masterGain = audio.createGain();
+      masterGain.gain.value = 0.18;
+      masterGain.connect(audio.destination);
+
+      function createOsc(type, freq, start, duration, volume = 0.08) {
+        const osc = audio.createOscillator();
+        const gain = audio.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, start);
+
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(volume, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        osc.connect(gain);
+        gain.connect(masterGain);
+
+        osc.start(start);
+        osc.stop(start + duration + 0.03);
+      }
+
+      for (let i = 0; i < 4; i++) {
+        const start = now + i * 0.42;
+
+        createOsc("sawtooth", 820 - i * 80, start, 0.35, 0.06);
+        createOsc("triangle", 420 + i * 40, start + 0.04, 0.3, 0.05);
+
+        const wobble = audio.createOscillator();
+        const wobbleGain = audio.createGain();
+
+        wobble.type = "sine";
+        wobble.frequency.setValueAtTime(12, start);
+
+        const carrier = audio.createOscillator();
+        const carrierGain = audio.createGain();
+
+        carrier.type = "sine";
+        carrier.frequency.setValueAtTime(240 + i * 20, start);
+
+        wobble.connect(wobbleGain);
+        wobbleGain.gain.value = 35;
+        wobbleGain.connect(carrier.frequency);
+
+        carrierGain.gain.setValueAtTime(0.0001, start);
+        carrierGain.gain.exponentialRampToValueAtTime(0.045, start + 0.03);
+        carrierGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+
+        carrier.connect(carrierGain);
+        carrierGain.connect(masterGain);
+
+        wobble.start(start);
+        carrier.start(start);
+
+        wobble.stop(start + 0.35);
+        carrier.stop(start + 0.35);
+      }
+    }
+
+    startPauseBtn.addEventListener("click", () => {
+      isRunning ? pauseTimer() : startTimer();
+    });
+
+    resetBtn.addEventListener("click", resetTimer);
+    skipBtn.addEventListener("click", skipPhase);
+
+    clearBtn.addEventListener("click", () => {
+      focusSessions = 0;
+      completedCycles = 0;
+      setStatus("Stats cleared. The galaxy remembers nothing.");
+      render();
+    });
+
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.addEventListener("click", () => switchMode(button.dataset.mode));
+    });
+
+    Object.values(inputs).forEach((input) => {
+      input.addEventListener("change", () => {
+        input.value = Math.max(Number(input.min), Math.min(Number(input.max), Number(input.value) || Number(input.min)));
+        if (!isRunning) resetTimer();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
